@@ -1,6 +1,6 @@
 # 简单性能分析
-1. 请参考ue4-cpp-tutorial/Lesson_Stat工程
-2. 设置为独立进程游戏:  
+1. 下载ue4-cpp-tutorial/Lesson_Stat工程
+2. 然后设置为独立进程游戏:  
 ![ddd](/stat/img/step10.png)
 3. 点击上面的高级设置添加启动参数 -NoVerifyGC -NoAILogging:  
 ![ddd](/stat/img/step2.png)
