@@ -1,0 +1,16 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{4039406B-427B-33C7-2472-159142C048B5}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "Lesson_Stat",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		}
+	]
+}
