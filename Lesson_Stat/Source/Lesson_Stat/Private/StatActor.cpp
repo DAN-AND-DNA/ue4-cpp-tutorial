@@ -1,12 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
+
 #include "StatActor.h"
 #include "Runtime/Engine/Classes/Kismet/KismetSystemLibrary.h"
+#include "Lesson_Stat/Lesson_Stat.h"
 
 
-// 定义组
-DECLARE_STATS_GROUP(TEXT("DanProf"), STATGROUP_DanProf, STATCAT_Advanced);
+
 
 // 定义统计数据
 DECLARE_CYCLE_STAT(TEXT("Do fake op"), STAT_FakeOP, STATGROUP_DanProf);	// 统计操作

@@ -4,5 +4,3 @@
 
 #include "CoreMinimal.h"
 
-// ¶¨Òå×é
-DECLARE_STATS_GROUP(TEXT("DanProf"), STATGROUP_DanProf, STATCAT_Advanced);
