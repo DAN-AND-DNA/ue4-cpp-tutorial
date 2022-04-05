@@ -1,4 +1,6 @@
 # 简单性能分析
+
+## 会话前端(SessionFrontEnd)
 1. 下载ue4-cpp-tutorial/Lesson_Stat工程
 2. 然后设置为独立进程游戏:  
 ![ddd](/Lesson_Stat/img/step10.png)
@@ -13,15 +15,18 @@
 ![ddd](/Lesson_Stat/img/step4.png)
 8. 找到左边代码里定义的DanProf组，双击组内要显示的统计数据，红色的内存线条不断上升，并随后出现断崖表示清理完内存，蓝色的线条表示操作的统计数据，可以查看调用栈和性能据:  
 ![ddd](/Lesson_Stat/img/stat.png)
-9. 在头文件Engine\Source\Runtime\Core\Public\Stats\StatsTrace.h修改该行以启动stat，重新编译UE4和UnrealInsights:
+  
+  
+## UnrealInsights
+1. 在头文件Engine\Source\Runtime\Core\Public\Stats\StatsTrace.h修改该行以启动stat，重新编译UE4和UnrealInsights:
 ``` c++
     #define EXPERIMENTAL_STATSTRACE_ENABLED 1
 ```
 ![ddd](/Lesson_Stat/img/step14.png)
-10.   启动\Engine\Binaries\Win64\UnrealInsights.exe，勾选自动实时分析(Auto-start analysis for LIVE trace ssessions)，参考上文添加启动参数 -trace=cpu,frame,log,bookmark,stats -statnamedevents  
-11. 如下是GameThread，ReaderThread在某帧里的函数调用信息:   
+2. 启动\Engine\Binaries\Win64\UnrealInsights.exe，勾选自动实时分析(Auto-start analysis for LIVE trace ssessions)，参考上文添加启动参数 -trace=cpu,frame,log,bookmark,stats -statnamedevents  
+3. 如下是GameThread，ReaderThread在某帧里的函数调用信息:   
 ![ddd](/Lesson_Stat/img/step13.png)
-12. 如下是我们源代码里添加的统计函数的调用关系和时间消耗情况:  
+4. 如下是我们源代码里添加的统计函数的调用关系和时间消耗情况:  
 ![ddd](/Lesson_Stat/img/step11.png)
-13. 如下是我们源代码里的内存分配和释放的统计情况:  
+5. 如下是我们源代码里的内存分配和释放的统计情况:  
 ![ddd](/Lesson_Stat/img/step12.png)
