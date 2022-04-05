@@ -18,7 +18,7 @@
     #define EXPERIMENTAL_STATSTRACE_ENABLED 1
 ```
 ![ddd](/Lesson_Stat/img/step14.png)
-10.   启动\Engine\Binaries\Win64\UnrealInsights.exe，勾选自动实时分析(Auto-start analysis for LIVE trace ssessions)，参考上文添加启动参数 -trace=cpu,frame,log,bookmark,stats -statnamedevents
+10.   启动\Engine\Binaries\Win64\UnrealInsights.exe，勾选自动实时分析(Auto-start analysis for LIVE trace ssessions)，参考上文添加启动参数 -trace=cpu,frame,log,bookmark,stats -statnamedevents  
 11. 如下是GameThread，ReaderThread在某帧里的函数调用信息:   
 ![ddd](/Lesson_Stat/img/step13.png)
 12. 如下是我们源代码里添加的统计函数的调用关系和时间消耗情况:  
