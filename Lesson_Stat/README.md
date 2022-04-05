@@ -18,15 +18,16 @@
   
   
 ## UnrealInsights
-1. 在头文件Engine\Source\Runtime\Core\Public\Stats\StatsTrace.h修改该行以启动stat，重新编译UE4和UnrealInsights:
+1. 在头文件Engine\Source\Runtime\Core\Public\Stats\StatsTrace.h修改该行以启动额外信息统计，重新编译UE4和UnrealInsights:
 ``` c++
     #define EXPERIMENTAL_STATSTRACE_ENABLED 1
 ```
 ![ddd](/Lesson_Stat/img/step14.png)
-2. 启动\Engine\Binaries\Win64\UnrealInsights.exe，勾选自动实时分析(Auto-start analysis for LIVE trace ssessions)，参考上文添加启动参数 -trace=cpu,frame,log,bookmark,stats -statnamedevents  
-3. 如下是GameThread，ReaderThread在某帧里的函数调用信息:   
+2. 启动\Engine\Binaries\Win64\UnrealInsights.exe，勾选自动实时分析(Auto-start analysis for LIVE trace ssessions)  
+3. 参考上文给独立进程游戏添加启动参数 -trace=cpu,frame,log,bookmark,stats -statnamedevents  
+4. 结果如下是GameThread，ReaderThread在某帧里的函数调用信息:   
 ![ddd](/Lesson_Stat/img/step13.png)
-4. 如下是我们源代码里添加的统计函数的调用关系和时间消耗情况:  
+4. 结果如下是我们源代码里添加的统计函数的调用关系和时间消耗情况:  
 ![ddd](/Lesson_Stat/img/step11.png)
-5. 如下是我们源代码里的内存分配和释放的统计情况:  
+5. 结果如下是我们源代码里的内存分配和释放的统计情况:  
 ![ddd](/Lesson_Stat/img/step12.png)
