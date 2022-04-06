@@ -32,8 +32,8 @@
 ## TaskGraph的例子
 
 1. TaskGraph是虚幻提供的并行编程框架，可以给创建的任务指定顺序和之间的依赖，即所谓的任务图
-2. 创建的任务可以指定给某个线程执行
-3. 官方代码中对任务定义的例程:  
+2. 创建的任务可以指定给TaskGraphThread工作线程或者上面所讲的named线程中执行
+3. 这里是官方代码中对任务定义的例程:  
    
 ``` c++
 // 位置在Engine\Source\Runtime\Core\Public\Async\TaskGraphInterfaces.h
