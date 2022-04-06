@@ -74,7 +74,7 @@ public:
 };
 ```
 
-4. 这是我们定义的Something任务内容，代码里必须提供DoTask()函数，该函数会被GetDesiredThread()所返回的指定线程所运行，这里的AnyThread指的是任意的TaskGraph工作线程，GetSubsequentsMode主要是针对是否存在后续任务，尽量使用TrackSubsequents来表示会存在后续任务，因为FireAndForget表示没有后续任务，但会容易因为使用了后续任务的相关操作而导致出现空指针或者其他错误:  
+4. 这是我们定义的Something任务内容，代码里必须提供DoTask()函数，该函数会被GetDesiredThread()所返回的指定线程所运行，这里的AnyThread指的是任意的TaskGraph工作线程，GetSubsequentsMode()主要是针对是否存在后续任务，尽量使用TrackSubsequents来表示会存在后续任务，因为FireAndForget表示没有后续任务，但会容易因为使用了后续任务的相关操作而导致出现空指针或者其他错误:  
     
 ``` c++
 // Something任务
