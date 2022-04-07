@@ -3,7 +3,7 @@
 
 #include "ThreadActor.h"
 
-
+//===================== GraphTask =====================
 /*
 	Task_Something - Task_OnSomethingDone
 */
@@ -63,14 +63,23 @@ AThreadActor::AThreadActor()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	TaskDelegateOnAutoDelAsyncTaskDone.BindUObject(this, &AThreadActor::K2_AysncTask_OnAutoDelTaskDone);
+	TaskDelegateOnSomethingDone.BindUObject(this, &AThreadActor::K2_TaskGraph_OnSomethingDone);
+	TaskDelegateOnManualDelAsyncTaskDone.BindUObject(this, &AThreadActor::K2_AysncTask_OnManualDelTaskDone);
+}
+
+void AThreadActor::BeginDestroy() {
+	Super::BeginDestroy();
+
+	TaskDelegateOnAutoDelAsyncTaskDone.Unbind();
+	TaskDelegateOnSomethingDone.Unbind();
+	TaskDelegateOnManualDelAsyncTaskDone.Unbind();
 }
 
 void AThreadActor::K2_TaskGraph_AsyncDoSomething(const FString& InArg) {
-	FTaskDelegate_OnSomethingDone TaskDelegate;
+	//FTaskDelegate_OnSomethingDone TaskDelegate;
 
-	TaskDelegate.BindUObject(this, &AThreadActor::K2_TaskGraph_OnSomethingDone);
-
-	TGraphTask<class FTask_Something>::CreateTask(nullptr, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(InArg, TaskDelegate);	// 创建和分配任务
+	TGraphTask<class FTask_Something>::CreateTask(nullptr, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(InArg, TaskDelegateOnSomethingDone);	// 创建和分配任务
 }
 
 
@@ -84,7 +93,7 @@ Task_ForkJoinMain1	/						\	Task_ForkJoinMain2
 
 class FTaskContext {
 public:
-	~FTaskContext() { 
+	~FTaskContext() {
 		TaskDelegate.Unbind();
 		UE_LOG(LogTemp, Log, TEXT("Context is destoryed")); 
 	}
@@ -219,4 +228,101 @@ void AThreadActor::K2_TaskGraph_AsyncForkJoin(const FString& InArg) {
 	PreMain.Add(TaskSub2);
 
 	auto TaskMain2 = TGraphTask<FTask_ForkJoinMain2>::CreateTask(&PreMain, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(Ctx);
+}
+
+
+
+//===================== Async Task=====================
+class FAutoDelTask : public  FNonAbandonableTask {
+
+public:
+	FAutoDelTask(const FString& InName, FTaskDelegate_OnAutoDelAsyncTaskDone TaskDelegate)
+		: Name(InName)
+		, TaskDelegate(TaskDelegate) {
+	}
+
+	~FAutoDelTask(){}
+
+	// 需提供如下2个函数
+	void DoWork() {
+		FPlatformProcess::Sleep(2);
+
+
+		auto TaskDelegateCopied = this->TaskDelegate;
+		auto NameCopied = this->Name;
+
+		AsyncTask(ENamedThreads::GameThread, [TaskDelegateCopied, NameCopied]() {
+			TaskDelegateCopied.ExecuteIfBound(FString::Printf(TEXT("Finish task: %s"), *NameCopied));
+		});
+		
+	}
+	FORCEINLINE TStatId GetStatId() const { RETURN_QUICK_DECLARE_CYCLE_STAT(FAutoDelTask, STATGROUP_ThreadPoolAsyncTasks); }
+
+private:
+	friend class FAutoDeleteAsyncTask<FAutoDelTask>;
+	FString Name;
+	FTaskDelegate_OnAutoDelAsyncTaskDone TaskDelegate;
+};
+
+void AThreadActor::K2_AysncTask_AsyncDoAutoDelTask(const FString& InArg) {
+	(new FAutoDeleteAsyncTask<FAutoDelTask>(InArg, this->TaskDelegateOnAutoDelAsyncTaskDone))->StartBackgroundTask();
+}
+
+class FManualDelTask : public  FNonAbandonableTask {
+
+public:
+	FManualDelTask(const FString& InName, FTaskDelegate_OnManualDelAsyncTaskDone TaskDelegate)
+		: Name(InName)
+		, TaskDelegate(TaskDelegate) {
+	}
+
+	~FManualDelTask() {}
+
+	// 需提供如下2个函数
+	void DoWork() {
+		FPlatformProcess::Sleep(2);
+
+		auto TaskDelegateCopied = this->TaskDelegate;
+		auto NameCopied = this->Name;
+		UE_LOG(LogTemp, Log, TEXT("do work"));
+		
+		AsyncTask(ENamedThreads::GameThread, [TaskDelegateCopied, NameCopied]() {
+			TaskDelegateCopied.ExecuteIfBound(FString::Printf(TEXT("Finish task: %s"), *NameCopied));
+		});
+		
+		return;
+	}
+
+	FORCEINLINE TStatId GetStatId() const { RETURN_QUICK_DECLARE_CYCLE_STAT(FManualDelTask, STATGROUP_ThreadPoolAsyncTasks); }
+
+private:
+	friend class FAsyncTask<FManualDelTask>;
+	FString Name;
+	FTaskDelegate_OnManualDelAsyncTaskDone TaskDelegate;
+};
+
+
+
+void AThreadActor::K2_AysncTask_AsyncDoManualDelTask(const FString& InArg) {
+	auto Task = new FAsyncTask<FManualDelTask>(InArg, this->TaskDelegateOnManualDelAsyncTaskDone);
+	Task->StartBackgroundTask();
+
+	GetWorldTimerManager().SetTimer(
+		this->Timer, 
+		FTimerDelegate::CreateLambda([Task, this]() {
+			//UE_LOG(LogTemp, Log, TEXT("on time"));
+
+			if (Task->IsDone()) {
+
+				UE_LOG(LogTemp, Log, TEXT("is done"));
+				
+				Task->EnsureCompletion();
+				delete Task;
+
+				this->GetWorldTimerManager().ClearTimer(this->Timer);
+			}
+		}), 
+		0.1f, 
+		true
+	);
 }
