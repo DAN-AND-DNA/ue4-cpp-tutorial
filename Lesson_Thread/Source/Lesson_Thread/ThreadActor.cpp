@@ -4,7 +4,9 @@
 #include "ThreadActor.h"
 
 
-
+/*
+	Task_Something - Task_OnSomethingDone
+*/
 
 // Something任务完成
 class FTask_OnSomethingDone {
@@ -55,11 +57,10 @@ private:
 };
 
 
-
 // Sets default values
 AThreadActor::AThreadActor()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 }
@@ -72,3 +73,150 @@ void AThreadActor::K2_TaskGraph_AsyncDoSomething(const FString& InArg) {
 	TGraphTask<class FTask_Something>::CreateTask(nullptr, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(InArg, TaskDelegate);	// 创建和分配任务
 }
 
+
+
+/*
+						FTask_ForkJoinSub1
+Task_ForkJoinMain1	/						\	Task_ForkJoinMain2
+					\						/
+						FTask_ForkJoinSub2
+*/
+
+class FTaskContext {
+public:
+	~FTaskContext() { 
+		TaskDelegate.Unbind();
+		UE_LOG(LogTemp, Log, TEXT("Context is destoryed")); 
+	}
+public:
+	bool bRunning = false;
+	FTaskDelegate_OnForkJoinDone TaskDelegate;
+	FString InArg;
+	FString Main1Result;
+	FString Sub1Result;
+	FString Sub2Result;
+	FString Main2Result;
+};
+
+
+
+// ForkJoin 主任务1
+class FTask_ForkJoinMain1 {
+
+public:
+	FTask_ForkJoinMain1(TSharedPtr<FTaskContext> InCtx)
+		: Ctx(InCtx) {
+	}
+
+	// TGraphTask的TTask模板类型中需要实现如下4个函数
+	FORCEINLINE  TStatId GetStatId() const { RETURN_QUICK_DECLARE_CYCLE_STAT(FTask_ForkJoinMain1, STATGROUP_TaskGraphTasks); }
+	static ENamedThreads::Type GetDesiredThread() { return ENamedThreads::AnyThread; }
+	static ESubsequentsMode::Type GetSubsequentsMode() { return ESubsequentsMode::TrackSubsequents; } // FireAndForget 会导致后续任务的依赖关系失败
+	void DoTask(ENamedThreads::Type CurrentThread, const FGraphEventRef& Subsequents) {
+		if (!Ctx->bRunning) {
+			return;
+		}
+
+		Ctx->Main1Result = FString::Printf(TEXT("[main1]: %s"), *Ctx->InArg);
+	}
+
+private:
+	TSharedPtr<FTaskContext> Ctx;
+};
+
+// ForkJoin 主任务2
+class FTask_ForkJoinMain2 {
+
+public:
+	FTask_ForkJoinMain2(TSharedPtr<FTaskContext> InCtx)
+		: Ctx(InCtx) {
+	}
+
+	// TGraphTask的TTask模板类型中需要实现如下4个函数
+	FORCEINLINE  TStatId GetStatId() const { RETURN_QUICK_DECLARE_CYCLE_STAT(FTask_ForkJoinMain2, STATGROUP_TaskGraphTasks); }
+	static ENamedThreads::Type GetDesiredThread() { return ENamedThreads::GameThread; }
+	static ESubsequentsMode::Type GetSubsequentsMode() { return ESubsequentsMode::TrackSubsequents; } // FireAndForget 会导致后续任务的依赖关系失败
+	void DoTask(ENamedThreads::Type CurrentThread, const FGraphEventRef& Subsequents) {
+		if (!Ctx->bRunning) {
+			return;
+		}
+
+		check(IsInGameThread());
+
+		Ctx->Main2Result = FString::Printf(TEXT("[main2]: %s %s"), *Ctx->Sub1Result, *Ctx->Sub2Result);
+		Ctx->TaskDelegate.ExecuteIfBound(Ctx->Main2Result);
+	}
+
+private:
+	TSharedPtr<FTaskContext> Ctx;
+};
+
+
+// ForkJoin 子任务1
+class FTask_ForkJoinSub1 {
+
+public:
+	FTask_ForkJoinSub1(TSharedPtr<FTaskContext> InCtx)
+		: Ctx(InCtx) {
+	}
+
+	// TGraphTask的TTask模板类型中需要实现如下4个函数
+	FORCEINLINE  TStatId GetStatId() const { RETURN_QUICK_DECLARE_CYCLE_STAT(FTask_ForkJoinSub1, STATGROUP_TaskGraphTasks); }
+	static ENamedThreads::Type GetDesiredThread() { return ENamedThreads::AnyThread; }
+	static ESubsequentsMode::Type GetSubsequentsMode() { return ESubsequentsMode::TrackSubsequents; } // FireAndForget 会导致后续任务的依赖关系失败
+	void DoTask(ENamedThreads::Type CurrentThread, const FGraphEventRef& Subsequents) {
+		if (!Ctx->bRunning) {
+			return;
+		}
+
+		Ctx->Sub1Result = FString::Printf(TEXT("[sub1]: %s"), *Ctx->Main1Result);
+	}
+
+private:
+	TSharedPtr<FTaskContext> Ctx;
+};
+
+// ForkJoin 子任务2
+class FTask_ForkJoinSub2 {
+
+public:
+	FTask_ForkJoinSub2(TSharedPtr<FTaskContext> InCtx)
+		: Ctx(InCtx) {
+	}
+
+	// TGraphTask的TTask模板类型中需要实现如下4个函数
+	FORCEINLINE  TStatId GetStatId() const { RETURN_QUICK_DECLARE_CYCLE_STAT(FTask_ForkJoinSub2, STATGROUP_TaskGraphTasks); }
+	static ENamedThreads::Type GetDesiredThread() { return ENamedThreads::AnyThread; }
+	static ESubsequentsMode::Type GetSubsequentsMode() { return ESubsequentsMode::TrackSubsequents; } // FireAndForget 会导致后续任务的依赖关系失败
+	void DoTask(ENamedThreads::Type CurrentThread, const FGraphEventRef& Subsequents) {
+		if (!Ctx->bRunning) {
+			return;
+		}
+
+		Ctx->Sub2Result = FString::Printf(TEXT("[sub2]: %s"), *Ctx->Main1Result);
+	}
+
+private:
+	TSharedPtr<FTaskContext> Ctx;
+};
+
+void AThreadActor::K2_TaskGraph_AsyncForkJoin(const FString& InArg) {
+	TSharedPtr<FTaskContext> Ctx(new FTaskContext);
+	Ctx->bRunning = true;
+	Ctx->InArg = InArg;
+	Ctx->TaskDelegate.BindUObject(this, &AThreadActor::K2_TaskGraph_OncForkJoinDone);
+
+	auto TaskMain1 = TGraphTask<FTask_ForkJoinMain1>::CreateTask(nullptr, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(Ctx);
+
+	FGraphEventArray PreSub;
+	PreSub.Add(TaskMain1);
+
+	auto TaskSub1 = TGraphTask<FTask_ForkJoinSub1>::CreateTask(&PreSub, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(Ctx);
+	auto TaskSub2 = TGraphTask<FTask_ForkJoinSub2>::CreateTask(&PreSub, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(Ctx);
+
+	FGraphEventArray PreMain;
+	PreMain.Add(TaskSub1);
+	PreMain.Add(TaskSub2);
+
+	auto TaskMain2 = TGraphTask<FTask_ForkJoinMain2>::CreateTask(&PreMain, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(Ctx);
+}

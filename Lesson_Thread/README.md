@@ -113,6 +113,30 @@ void AThreadActor::K2_TaskGraph_AsyncDoSomething(const FString& InArg) {
 
 ```
 
+7. 稍微复杂的任务关系可以参考项目，几个任务之间存在互相依赖，其中Shared指针是防止ctx对象过早被销毁导致的悬空指针:  
+   
+``` c++
+void AThreadActor::K2_TaskGraph_AsyncForkJoin(const FString& InArg) {
+	TSharedPtr<FTaskContext> Ctx(new FTaskContext);
+	Ctx->bRunning = true;
+	Ctx->InArg = InArg;
+	Ctx->TaskDelegate.BindUObject(this, &AThreadActor::K2_TaskGraph_OncForkJoinDone);
+
+	auto TaskMain1 = TGraphTask<FTask_ForkJoinMain1>::CreateTask(nullptr, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(Ctx);
+
+	FGraphEventArray PreSub;
+	PreSub.Add(TaskMain1);
+
+	auto TaskSub1 = TGraphTask<FTask_ForkJoinSub1>::CreateTask(&PreSub, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(Ctx);
+	auto TaskSub2 = TGraphTask<FTask_ForkJoinSub2>::CreateTask(&PreSub, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(Ctx);
+
+	FGraphEventArray PreMain;
+	PreMain.Add(TaskSub1);
+	PreMain.Add(TaskSub2);
+
+	auto TaskMain2 = TGraphTask<FTask_ForkJoinMain2>::CreateTask(&PreMain, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(Ctx);
+}
+```
 
 
 

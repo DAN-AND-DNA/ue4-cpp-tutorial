@@ -7,6 +7,7 @@
 #include "ThreadActor.generated.h"
 
 DECLARE_DELEGATE_OneParam(FTaskDelegate_OnSomethingDone, const FString& /*OutResult*/);
+DECLARE_DELEGATE_OneParam(FTaskDelegate_OnForkJoinDone, const FString& /*OutResult*/);
 
 UCLASS()
 class LESSON_THREAD_API AThreadActor : public AActor
@@ -23,5 +24,15 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Something Done"))
 	void K2_TaskGraph_OnSomethingDone(const FString& OutResult); // TaskGraph
 
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Async ForkJoin"))
+	void K2_TaskGraph_AsyncForkJoin(const FString& InArgs);		// TaskGraph
+
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On ForkJoin Done"))
+	void K2_TaskGraph_OncForkJoinDone(const FString& OutResult); // TaskGraph
+
+
 protected:
+
+private:
+	//FTaskContext* Ctx;
 };
