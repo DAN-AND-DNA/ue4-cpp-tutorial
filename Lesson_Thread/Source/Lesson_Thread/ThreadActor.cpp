@@ -326,3 +326,108 @@ void AThreadActor::K2_AysncTask_AsyncDoManualDelTask(const FString& InArg) {
 		true
 	);
 }
+
+
+class FWorker : public FRunnable {
+public:
+	FWorker(const FString& WorkerName)
+		: WorkerName(WorkerName)
+		, bRunning (false) {
+	}
+
+	static TSharedPtr<FWorker> NewAndRun() {
+		FWorker::BaseId++;
+		FString WorkerName = FString::Printf(TEXT("Worker_%d"), FWorker::BaseId);
+		auto Ptr = TSharedPtr<FWorker>(new FWorker(WorkerName));
+		Ptr->OwnerThread = FRunnableThread::Create(Ptr.Get(), *WorkerName);
+		Ptr->WorkerId = Ptr->OwnerThread->GetThreadID();
+
+		check(Ptr->OwnerThread != nullptr);
+		return Ptr;
+	}
+	
+	~FWorker() {
+		if (OwnerThread == nullptr) {
+			return;
+		}
+
+		bRunning = false;
+		OwnerThread->WaitForCompletion();
+	}
+
+	virtual bool Init() override {
+		if (!OwnerThread) {
+			return false;
+		}
+
+		bRunning = true;
+		return true;
+	}
+	virtual uint32 Run() override {
+		if (!bRunning || !OwnerThread) {
+			return -1;
+		}
+	
+		while(bRunning) {
+			UE_LOG(LogTemp, Log, TEXT("Thread id: %d is working"), WorkerId);
+			FPlatformProcess::Sleep(3);
+		}
+
+		return 0;
+	}
+
+	virtual void Stop() override {
+		if (!bRunning || !OwnerThread) {
+			return;
+		}
+
+		bRunning = false;
+	}
+
+	virtual void Exit() override { 
+		UE_LOG(LogTemp, Log, TEXT("Thread id: %d exit"), WorkerId);
+		bRunning = false;
+	}
+
+	void Kill() {
+		if (!bRunning || !OwnerThread) {
+			return;
+		}
+
+		OwnerThread->Kill(false);
+	}
+
+	void Suspend() {
+		if (!bRunning || !OwnerThread) {
+			return;
+		}
+
+		OwnerThread->Suspend();
+	}
+
+	void Resume() {
+		if (!bRunning || !OwnerThread) {
+			return;
+		}
+		
+		OwnerThread->Suspend(false);
+	}
+
+private:
+	FRunnableThread* OwnerThread;
+	FString WorkerName;
+	int32 WorkerId;
+	static int32 BaseId;
+	bool bRunning;
+};
+
+int32 FWorker::BaseId = 1000;
+
+
+void AThreadActor::K2_RunWorker() {
+	Worker = FWorker::NewAndRun();
+}
+
+void AThreadActor::K2_StopWorker() {
+	Worker->Stop();
+}

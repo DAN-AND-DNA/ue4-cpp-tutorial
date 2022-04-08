@@ -47,6 +47,11 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On ManualDelTask Done"))
 	void K2_AysncTask_OnManualDelTaskDone(const FString& OutResult);
 
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Run Worker"))
+	void K2_RunWorker();
+
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Stop Worker"))
+	void K2_StopWorker();
 public:
 	FTaskDelegate_OnAutoDelAsyncTaskDone TaskDelegateOnAutoDelAsyncTaskDone;
 	FTaskDelegate_OnManualDelAsyncTaskDone TaskDelegateOnManualDelAsyncTaskDone;
@@ -54,4 +59,6 @@ public:
 private:
 	float TimePassed;
 	FTimerHandle Timer;
+	TSharedPtr<class FWorker> Worker;
 };
+

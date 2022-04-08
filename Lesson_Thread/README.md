@@ -318,3 +318,104 @@ TaskGraph可以使用枚举值ENamedThreads中的线程名来指定线程执行�
 	```
    
 ## FRunable的例子
+1. FRunable是线程的业务逻辑，其Init，Run，Stop，Exit都会被所属平台的线程执行，初始化过程在Init，返回true代表成功，只有成功了，后续的Run函数才会调用，Run函数是业务逻辑的执行部分，Stop表示提前结束运行，Exit是结束清理过程
+2. FRunnableThread是下层线程的抽象，会提供平台的线程来执行FRunable中的业务逻辑，其中Kill方法可以用来使得线程退出，Suspend可以来挂起线程的执行，让出cpu时间片，或者恢复执行
+
+``` c++
+class FWorker : public FRunnable {
+public:
+	FWorker(const FString& WorkerName)
+		: WorkerName(WorkerName)
+		, bRunning (false) {
+	}
+
+	static TSharedPtr<FWorker> NewAndRun() {
+		FWorker::BaseId++;
+		FString WorkerName = FString::Printf(TEXT("Worker_%d"), FWorker::BaseId);
+		auto Ptr = TSharedPtr<FWorker>(new FWorker(WorkerName));
+		Ptr->OwnerThread = FRunnableThread::Create(Ptr.Get(), *WorkerName);
+		Ptr->WorkerId = Ptr->OwnerThread->GetThreadID();
+
+		check(Ptr->OwnerThread != nullptr);
+		return Ptr;
+	}
+	
+	~FWorker() {
+		if (OwnerThread == nullptr) {
+			return;
+		}
+
+		bRunning = false;
+		OwnerThread->WaitForCompletion();
+	}
+
+	virtual bool Init() override {
+		if (!OwnerThread) {
+			return false;
+		}
+
+		bRunning = true;
+		return true;
+	}
+	virtual uint32 Run() override {
+		if (!bRunning || !OwnerThread) {
+			return -1;
+		}
+	
+		while(bRunning) {
+			UE_LOG(LogTemp, Log, TEXT("Thread id: %d is working"), WorkerId);
+			FPlatformProcess::Sleep(3);
+		}
+
+		return 0;
+	}
+
+	virtual void Stop() override {
+		if (!bRunning || !OwnerThread) {
+			return;
+		}
+
+		bRunning = false;
+	}
+
+	virtual void Exit() override { 
+		UE_LOG(LogTemp, Log, TEXT("Thread id: %d exit"), WorkerId);
+		bRunning = false;
+	}
+
+	// 强制停下线程执行
+	void Kill() {
+		if (!bRunning || !OwnerThread) {
+			return;
+		}
+
+		OwnerThread->Kill(false);
+	}
+
+
+	void Suspend() {
+		if (!bRunning || !OwnerThread) {
+			return;
+		}
+
+		OwnerThread->Suspend();
+	}
+
+	void Resume() {
+		if (!bRunning || !OwnerThread) {
+			return;
+		}
+		
+		OwnerThread->Suspend(false);
+	}
+
+private:
+	FRunnableThread* OwnerThread;
+	FString WorkerName;
+	int32 WorkerId;
+	static int32 BaseId;
+	bool bRunning;
+};
+
+int32 FWorker::BaseId = 1000;
+```
