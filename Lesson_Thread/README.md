@@ -153,7 +153,7 @@ TaskGraph可以使用枚举值ENamedThreads中的线程名来指定线程执行�
 
 
 ## AsyncTask的例子
-AsyncTask分为FAsyncTask（完成后需要手动销毁）和FAutoDeleteAsyncTask（完成后自动销毁）2种任务类型
+AsyncTask分为FAsyncTask（完成后需要手动销毁）和FAutoDeleteAsyncTask（完成后自动销毁）2种任务类型  
 一般的使用流程是我们的任务继承FNonAbandonableTask（不可放弃的任务），在DoWork里实现业务，这之后开始创建的任务，可以调用StartBackgroundTask在线程池QueuedThreadPool里执行，也可以调用StartSynchronousTask在当前线程执行，具体可以参考下面的例子
 
 1. 官方的自动销毁例子:  
