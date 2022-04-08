@@ -1,6 +1,11 @@
 # 虚幻的线程
  
-这里介绍一些常见的线程，来作为性能分析和代码原理理解使用
+这里介绍一些常见的线程，来作为性能分析和代码原理理解使用，一般原则是游戏相关的业务只在GameThread里做，比如UObject、定时器和绘制的相关操作，而其他线程则主要拿来做文件和网络IO处理，多核计算等，如果其他线程的需要通知GameThread可以简单通过如下方式:
+```c++
+ AsyncTask(ENamedThreads::GameThread, [ErrorMsg]() {
+		UE_LOG(LogTemp, Error, TEXT("tcp socket thread exit: %s"), ErrorMsg);
+});
+```
 
 ## 虚幻的线程的创建流程
 
@@ -148,6 +153,8 @@ TaskGraph可以使用枚举值ENamedThreads中的线程名来指定线程执行�
 
 
 ## AsyncTask的例子
+AsyncTask分为FAsyncTask（完成后需要手动销毁）和FAutoDeleteAsyncTask（完成后自动销毁）2种任务类型
+一般的使用流程是我们的任务继承FNonAbandonableTask（不可放弃的任务），在DoWork里实现业务，这之后开始创建的任务，可以调用StartBackgroundTask在线程池QueuedThreadPool里执行，也可以调用StartSynchronousTask在当前线程执行，具体可以参考下面的例子
 
 1. 官方的自动销毁例子:  
    ``` c++
