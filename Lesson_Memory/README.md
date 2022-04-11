@@ -35,10 +35,10 @@
     ```
 
 4. new和delete操作符都是在模块实现和注册时就被重写了，比如调用了new，从其调用栈可以看到，实际调用的是ModuleBoilerplate.h中的版本:  
-![ddd](/img/step2.png)  
-![ddd](/img/step1.png)  
+![ddd](/Lesson_Memory/img/step2.png)  
+![ddd](/Lesson_Memory/img/step1.png)  
 5. 并且最终调用的内存分配器是TBB的FMalloc::Malloc函数，实际上虚幻里的智能指针、TArray、FString、TMap和UObject等都是类似的流程:  
-![ddd](/img/step3.png)  
+![ddd](/Lesson_Memory/img/step3.png)  
 
 ## 内存剖析
 虚幻提供的常用内存剖析工具有LLM(Low Level Memory Tracker)、Memreport和MallocProfiler等，其中比较新的是LLM即低级内存跟踪器，
@@ -73,12 +73,12 @@
     ```
 
 3. 简单使用可以直接添加启动参数 -LLM -LLMCSV:  
-![ddd](/img/step4.png)
-![ddd](/img/step5.png)
+![ddd](/Lesson_Memory/img/step4.png)
+![ddd](/Lesson_Memory/img/step5.png)
 4. 启动后会在saved/profiling/llm/中输出类似LLM_Pid15256_2022.04.12-00.51.40_Windows.csv的csv文件，是调用FMemory的Malloc的内存分配情况，也可以输入按~建在控制台输入stat LLMFULL得到下面的结果:  
-![ddd](/img/step6.png)
+![ddd](/Lesson_Memory/img/step6.png)
 5. 启动后会在saved/profiling/llm/中输出类似LLMPlatform_Pid15256_2022.04.12-00.51.40_Windows.csv的csv文件，这是是从系统进行内存分配的情况，也可以输入按~建在控制台输入stat LLMPlatform得到下面的结果:  
-![ddd](/img/step7.png)
+![ddd](/Lesson_Memory/img/step7.png)
 6. 每个tag的详细介绍可以查询[资料](https://www.cnblogs.com/kekec/p/14593345.html)
 7. 我们可以自定义自己的tag在LLMFULL中进行统计展现，例子如下:
     ```c++
@@ -103,4 +103,4 @@
     }
    ```
 9. 输出的csv文件包含每个标记的列，以MB为单位显示当前值。默认每隔5秒记录一下，可以使用LLM.LLMWriteInterval在控制台变量更改，这里可以发现DanMemProf统计的内存出现明显泄漏:  
-![ddd](/img/step8.png)
+![ddd](/Lesson_Memory/img/step8.png)
