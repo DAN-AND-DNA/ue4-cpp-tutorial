@@ -3,9 +3,9 @@
 
 ## 单播
 1. 单播定义，其中XXX可以用OneParam、TwoParams等来指定需要传入的函数的参数个数，但最多8个函数参数:  
-DECLARE_DELEGATE(代理名)
-DECLARE_DELEGATE_XXX(代理名, 参数类型)
-DECLARE_DELEGATE_RetVal_XXX(返回值类型，代理名, 参数类型)
+DECLARE_DELEGATE(代理名)  
+DECLARE_DELEGATE_XXX(代理名, 参数类型)  
+DECLARE_DELEGATE_RetVal_XXX(返回值类型，代理名, 参数类型)  
 
 2. 单播的简单定义如下:
     ```c++
@@ -147,25 +147,28 @@ OnOffline.Broadcast(TEXT("Lulu"));
     OnGameStart.BindUObject 等价 OnGameStart = FOnGameStart_Delegate::CreateUObject(xxx)
     ......
    ```
-2. 用普通委托的CreateLambda函数可以捕获动态委托，很容易复用普通的委托提供给蓝图使用:  
+2. 用委托类型的CreateLambda函数可以捕获动态委托，很容易复用普通的委托提供给蓝图使用:  
 
 ```c++
     // 定义
     DECLARE_DYNAMIC_DELEGATE(FOnUnderAttacked);
     DECLARE_DELEGATE(FOnUnderAttacked_Delegate)
-
-	UFUNCTION(BlueprintCallable, meta = (Displayname="RegisterUnderAttacked"))
-	void K2_RegisterUnderAttack(FOnUnderAttacked InUnderAttacked);
-
-	void RegisterUnderAttack(FOnUnderAttacked_Delegate InUnderAttacked);
+    
+    // 给蓝图调用
+    UFUNCTION(BlueprintCallable, meta = (Displayname="RegisterUnderAttacked"))
+    void K2_RegisterUnderAttack(FOnUnderAttacked InUnderAttacked);
+    // 给c++调用
+    void RegisterUnderAttack(FOnUnderAttacked_Delegate InUnderAttacked);
 
     // 实现
     void ADeActor::K2_RegisterUnderAttack(FOnUnderAttacked InUnderAttacked) {
+            // 复用c++调用版本
 	    this->RegisterUnderAttack(FOnUnderAttacked_Delegate::CreateLambda([InUnderAttacked]() {
 		    InUnderAttacked.ExecuteIfBound();
 	    }));
     }
-
+    
+    // c++调用版本
     void ADeActor::RegisterUnderAttack(FOnUnderAttacked_Delegate InUnderAttacked) {
 	    OnUnderAttacked = InUnderAttacked;
     }
