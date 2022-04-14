@@ -1,6 +1,6 @@
 # 垃圾回收
 
-简单的说，虚幻里的垃圾回收算法是在GC条件达成时（比如内存不足、GC间隔时间或者手动强制），分成Mark和Sweep两阶段，首先会暂停程序执行，然后开始从根节点开始遍历全部对象，判断是否可到达，然后对引用失效的对象进行清理、析构、释放内存和将指针赋值为nullptr，但普通的c++、UStruct和FGCObject对象都不在GC管理范围内，需要手动或者依靠智能指针管理其生命周期
+简单的说，虚幻里的垃圾回收算法是在GC条件达成时（比如内存不足、GC间隔时间或者手动强制），分成Mark和Sweep两阶段，首先会暂停程序执行，然后开始从根节点开始遍历全部对象，判断是否可到达，然后对引用失效的对象进行清理、析构、释放内存和将指针赋值为nullptr，但普通的c++对象、UStruct对象和FGCObject对象都不在GC管理范围内，需要手动或者依靠智能指针管理其生命周期
 
 ## UPROPERTY
 
@@ -8,7 +8,7 @@ UStruct和UObject都可以用UPROPERTY来修饰他们的成员变量，但UStruc
 
 ## UObject
 
-1. 可以用NewObject来创建UObject的对象实例，如果是通过UPROPERTY修饰的类型为UObject的成员变量，创建的UObject的对象实例被赋值到该成员变量上时算作被引用，并在内存常驻，无UPROPERTY修饰的UObject成员变量或者局部创建的UObject则不能算作被引用，会在下次GC发生时将创建的对象被自动清理，但不可以使用智能指针来保持创建的UObject的对象实例:  
+1. 可以通过NewObject来创建新UObject的对象实例，并且可以通过UPROPERTY来修饰UObject类型的成员变量，防止下次GC发生时该成员变量自动被清理，但不可以用智能指针来管理UObject的对象:  
 
    ```c++
    // .h
@@ -20,10 +20,10 @@ UStruct和UObject都可以用UPROPERTY来修饰他们的成员变量，但UStruc
 
     // .cpp
     this->Obj1 = NewObject<UEasyObj>(this, UEasyObj::StaticClass());
-	this->Obj2 = NewObject<UEasyObj>(this, UEasyObj::StaticClass());
+    this->Obj2 = NewObject<UEasyObj>(this, UEasyObj::StaticClass());
 
-	check(IsValid(this->Obj1));
-	check(IsValid(this->Obj2));
+    check(IsValid(this->Obj1));
+    check(IsValid(this->Obj2));
    ```
 
 
@@ -73,10 +73,10 @@ UStruct和UObject都可以用UPROPERTY来修饰他们的成员变量，但UStruc
     // .cpp
     this->StructEasy1 = FEasyStruct{};
 
-	this->StructEasy2 = (FEasyStruct*)(FMemory::Malloc(sizeof(FEasyStruct)));
-	check(this->StructEasy2 != nullptr);
-	FMemory::Free(this->StructEasy2);
-	this->StructEasy2 = nullptr;
+    this->StructEasy2 = (FEasyStruct*)(FMemory::Malloc(sizeof(FEasyStruct)));
+    check(this->StructEasy2 != nullptr);
+    FMemory::Free(this->StructEasy2);
+    this->StructEasy2 = nullptr;
     check(this->StructEasy2 == nullptr);
 
 	auto StructEasy3 = (FEasyStruct*)(FMemory::Malloc(sizeof(FEasyStruct)));
